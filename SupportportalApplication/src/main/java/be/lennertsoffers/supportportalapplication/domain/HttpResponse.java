@@ -1,16 +1,21 @@
 package be.lennertsoffers.supportportalapplication.domain;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.http.HttpStatus;
 
+import java.util.Date;
+
 @Getter
 @Setter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class HttpResponse {
-    private int httpStatusCode;
-    private HttpStatus httpStatus;
-    private String reason;
-    private String message;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss", timezone = "Europe/Brussels")
+    private final Date timestamp = new Date();
+    private final int httpStatusCode;
+    private final HttpStatus httpStatus;
+    private final String reason;
+    private final String message;
 }
