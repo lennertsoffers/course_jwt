@@ -25,7 +25,7 @@ public interface UserService {
 
     User updateUser(String currentUsername, String newFirstName, String newLastName, String newUsername, String newEmail, String role, boolean isNonLocked, boolean isActive, MultipartFile profileImage) throws UserNotFoundException, UsernameExistException, EmailExistException, IOException;
 
-    void deleteUser(long id) throws IOException;
+    void deleteUser(long id);
 
     void resetPassword(String email) throws MessagingException, EmailNotFoundException;
 
