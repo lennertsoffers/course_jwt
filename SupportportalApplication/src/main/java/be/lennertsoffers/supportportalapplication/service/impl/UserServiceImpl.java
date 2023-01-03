@@ -95,7 +95,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
 //        this.emailService.sendNewPasswordEmail(firstName, password, email);
 
-        return null;
+        return user;
     }
 
     @Override
