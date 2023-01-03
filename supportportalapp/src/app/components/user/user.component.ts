@@ -1,8 +1,12 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Subscription } from 'rxjs';
+import { CustomHttpResponse } from 'src/app/model/CustomHttpResponse';
+import { FileUploadStatus } from 'src/app/model/FileUploadStatus';
 import { User } from 'src/app/model/User';
+import { AuthenticationService } from 'src/app/service/authentication.service';
 import { UserService } from 'src/app/service/user.service';
 
 @Component({
@@ -13,6 +17,7 @@ import { UserService } from 'src/app/service/user.service';
 export class UserComponent implements OnInit {
     private titleSubject = new BehaviorSubject<string>("Users");
     private subcriptions: Subscription[] = [];
+    private currentUsername: string = "";
 
     public refreshing: boolean = false;
     public selectedUser: User | undefined;
@@ -20,11 +25,19 @@ export class UserComponent implements OnInit {
     public users: User[] = [];
     public fileName: String | null = null;
     public profileImage: File | null = null;
+    public editUser = new User();
+    public user: User | null = null;
+    public fileStatus = new FileUploadStatus();
 
-    constructor(private userService: UserService) { }
+    constructor(
+        private userService: UserService,
+        private authenticationService: AuthenticationService,
+        private router: Router
+    ) { }
 
     ngOnInit(): void {
         this.getUsers();
+        this.user = this.authenticationService.getUserFromLocalCache();
     }
 
     public changeTitle(title: string): void {
@@ -47,7 +60,7 @@ export class UserComponent implements OnInit {
         }));
     }
 
-    public onSelectUser(selectedUser: User) {
+    public onSelectUser(selectedUser: User): void {
         this.selectedUser = selectedUser;
         this.clickButton("openUserInfo");
     }
@@ -101,6 +114,125 @@ export class UserComponent implements OnInit {
 
         if (results.length === 0 || !searchTerm) {
             this.users = this.userService.getUsersFromLocalCache();
+        }
+    }
+
+    public onEditUser(editUser: User): void {
+        this.editUser = editUser;
+        this.currentUsername = editUser.username;
+
+        this.clickButton("openUserEdit");
+    }
+
+    public onUpdateUser(): void {
+        const formData = this.userService.createUserFormData(this.currentUsername, this.editUser, this.profileImage);
+        this.subcriptions.push(this.userService.addUser(formData).subscribe({
+            next: (response: User) => {
+                this.clickButton("closeEditUserModalButton")
+                this.getUsers();
+                this.fileName = null;
+                this.profileImage = null;
+                console.log(`${response.firstName} ${response.lastName} updated successfully!`);
+            },
+            error: (httpErrorResponse: HttpErrorResponse) => {
+                console.log(httpErrorResponse);
+            }
+        }));
+    }
+
+    public onDeleteUser(userId: number): void {
+        this.subcriptions.push(this.userService.deleteUser(userId).subscribe({
+            next: (response: CustomHttpResponse) => {
+                console.log(response.message);
+                this.getUsers();
+            },
+            error: (httpErrorResponse: HttpErrorResponse) => {
+                console.log(httpErrorResponse);
+            }
+        }));
+    }
+
+    public onResetPassword(emailForm: NgForm): void {
+        this.refreshing = true;
+
+        const emailAddress = emailForm.value["reset-password-email"];
+
+        this.subcriptions.push(this.userService.resetPassword(emailAddress).subscribe({
+            next: (response: CustomHttpResponse) => {
+                console.log(response.message);
+            },
+            error: (httpErrorResponse: HttpErrorResponse) => {
+                console.log(httpErrorResponse);
+            },
+            complete: () => {
+                emailForm.reset();
+                this.refreshing = false;
+            }
+        }))
+    }
+
+    public onUpdateCurrentUser(user: User): void {
+        this.refreshing = true;
+        this.currentUsername = this.authenticationService.getUserFromLocalCache().username;
+
+        const formData = this.userService.createUserFormData(this.currentUsername, user, this.profileImage);
+        this.subcriptions.push(this.userService.addUser(formData).subscribe({
+            next: (response: User) => {
+                this.authenticationService.addUserToLocalCache(response);
+                this.getUsers();
+                this.fileName = null;
+                this.profileImage = null;
+                console.log(`${response.firstName} ${response.lastName} updated successfully!`);
+            },
+            error: (httpErrorResponse: HttpErrorResponse) => {
+                console.log(httpErrorResponse);
+                this.profileImage = null;
+            },
+            complete: () => this.refreshing = false
+        }));
+    }
+
+    public onLogout(): void {
+        this.authenticationService.logOut();
+        this.router.navigateByUrl("/login");
+    }
+
+    public updateProfileImage(): void {
+        this.clickButton("profile-image-input");
+    }
+
+    public onUpdateProfileImage(): void {
+        const formData = new FormData();
+        if (this.user !== null) formData.append("username", this.user.username);
+        if (this.profileImage !== null) formData.append("profileImage", this.profileImage);
+
+        this.subcriptions.push(this.userService.updateProfileImage(formData).subscribe({
+            next: (event: HttpEvent<any>) => {
+                this.reportUploadProgress(event);
+                this.fileStatus.status = "done";
+                console.log("Profile image updated succssfully");
+            },
+            error: (httpErrorResponse: HttpErrorResponse) => {
+                console.log(httpErrorResponse.error.message);
+            }
+        }))
+    }
+
+    private reportUploadProgress(event: HttpEvent<any>): void {
+        switch (event.type) {
+            case HttpEventType.UploadProgress:
+                if (event.total) this.fileStatus.percentage = Math.round(100 * event.loaded / event.total);
+                this.fileStatus.status = "progress";
+                break;
+            case HttpEventType.Response:
+                if (event.status === 200 && this.user) {
+                    this.user.profileImageUrl = `${event.body.profileImageUrl}?time=${new Date().getTime()}`;
+                    console.log(`${event.body.firstName}'s profile image updated successfully`);
+                    this.fileStatus.status = "done";
+                } else {
+                    console.log(`Unable to upload image. Please try again.`);
+                }
+                break;
         }
     }
 
