@@ -33,7 +33,6 @@ public class EmailService {
         Message message = new MimeMessage(this.getEmailSession());
         message.setFrom(new InternetAddress(FROM_EMAIL));
         message.setRecipient(Message.RecipientType.TO, InternetAddress.parse(email, false)[0]);
-        message.setRecipient(Message.RecipientType.CC, InternetAddress.parse(CC_EMAIL, false)[0]);
         message.setText("Hello " + firstName + ",\n\nYour new account password is: " + password + "\n\nThe Support Team");
         message.setSentDate(new Date());
         message.saveChanges();

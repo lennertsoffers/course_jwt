@@ -33,4 +33,8 @@ public class User implements Serializable {
     private String[] authorities;
     private boolean isActive;
     private boolean isNotLocked;
+
+    public boolean isNotLocked() {
+        return true;
+    }
 }

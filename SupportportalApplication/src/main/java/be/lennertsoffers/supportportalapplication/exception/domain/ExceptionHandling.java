@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.locks.Lock;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -50,7 +51,8 @@ public class ExceptionHandling {
     }
 
     @ExceptionHandler(LockedException.class)
-    public ResponseEntity<HttpResponse> lockedException() {
+    public ResponseEntity<HttpResponse> lockedException(LockedException lockedException) {
+        lockedException.printStackTrace();
         return this.createHttpResponse(UNAUTHORIZED, ACCOUNT_LOCKED);
     }
 
@@ -93,13 +95,13 @@ public class ExceptionHandling {
 
     @ExceptionHandler(IOException.class)
     public ResponseEntity<HttpResponse> iOException(IOException exception) {
-        LOGGER.error(exception.getMessage());
+        exception.printStackTrace();
         return this.createHttpResponse(INTERNAL_SERVER_ERROR, ERROR_PROCESSING_FILE);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<HttpResponse> internalServerErrorException(Exception exception) {
-        LOGGER.error(exception.getMessage());
+        exception.printStackTrace();
         return this.createHttpResponse(INTERNAL_SERVER_ERROR, INTERNAL_SERVER_ERROR_MESSAGE);
     }
 

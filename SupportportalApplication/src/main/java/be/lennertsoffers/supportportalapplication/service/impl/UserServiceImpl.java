@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         this.LOGGER.info("New user password: " + password);
 
-        this.emailService.sendNewPasswordEmail(firstName, password, email);
+//        this.emailService.sendNewPasswordEmail(firstName, password, email);
 
         return null;
     }
@@ -173,7 +173,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setPassword(this.encodePassword(password));
 
         this.userRepository.save(user);
-        this.emailService.sendNewPasswordEmail(user.getFirstName(), user.getPassword(), user.getEmail());
+//        this.emailService.sendNewPasswordEmail(user.getFirstName(), user.getPassword(), user.getEmail());
     }
 
     @Override

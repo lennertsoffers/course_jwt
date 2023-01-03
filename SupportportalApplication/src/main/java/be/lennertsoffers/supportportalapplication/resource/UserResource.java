@@ -31,6 +31,7 @@ import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 
 @RestController
 @RequestMapping(path = "/user")
+@CrossOrigin("http://localhost:4200")
 @AllArgsConstructor
 public class UserResource extends ExceptionHandling {
     private UserService userService;
